@@ -1,0 +1,158 @@
+---
+title: "Final Project"
+author: "Camillo"
+date: "5/9/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 
+
+```{r }
+#import data
+getwd()
+setwd("C:/Users/n/Documents")
+data<-read.csv("CarPrice_Assignment.csv",header = T)
+
+```
+
+
+
+```{r }
+#form a data frame with only the required variables
+library(dplyr)
+data2<-data %>% dplyr::select(c("price", "highwaympg", "citympg", "horsepower"
+                               ,"fuelsystem", "enginesize", "cylindernumber"
+                               ,"drivewheel", "fueltype" ))
+#check for missing values
+sum(is.na(data2))
+#convert chr to factor for categorical variables
+data2$fuelsystem<-as.factor(data2$fuelsystem)
+data2$cylindernumber<-as.factor(data2$cylindernumber)
+data2$drivewheel<-as.factor(data2$drivewheel)
+data2$fueltype<-as.factor(data2$fueltype)
+```
+
+
+```{r }
+#visualize data 
+library(tidyverse)
+library(epiDisplay)
+# fuel system
+
+#frequency table
+tab1(data2$fuelsystem, sort.group = "decreasing",
+     cum.percent = TRUE)
+ggplot(data = data2, aes(x =fuelsystem, fill =fuelsystem)) +
+  geom_bar()
+
+#cylinder number
+
+#frequency table
+tab1(data2$cylindernumber, sort.group = "decreasing", 
+     cum.percent = TRUE)
+ggplot(data = data2, aes(x =cylindernumber, fill =cylindernumber)) +
+  geom_bar()
+#drive wheel
+#frequency table 
+tab1(data2$drivewheel, sort.group = "decreasing", 
+     cum.percent = TRUE)
+ggplot(data = data2, aes(x =drivewheel, fill =drivewheel)) +
+  geom_bar()
+
+# fuel type 
+
+#Frequency table
+tab1(data2$fueltype, sort.group = "decreasing", 
+     cum.percent = TRUE)
+ggplot(data = data2, aes(x =fueltype, fill =fueltype)) +
+  geom_bar()
+```
+
+
+```{r }
+# summary descriptive statistics for continuous data
+data2 %>% group_by(fuelsystem) %>%
+  summarise(mean_price=mean(price),
+            sd_price=sd(price))
+data2 %>% group_by(fueltype) %>%
+  summarise(mean_price=mean(price),
+            sd_price=sd(price))
+data2 %>% group_by(cylindernumber) %>%
+  summarise(mean_price=mean(price),
+            sd_price=sd(price))
+data2 %>% group_by(drivewheel) %>%
+  summarise(mean_price=mean(price),
+            sd_price=sd(price))
+
+```
+
+
+```{r }
+#assumptions test
+#normality
+#q-q plot
+qqnorm(data2$price, pch = 1, frame = FALSE)
+qqline(data2$price, col = "steelblue", lwd = 2)
+#using shapiro test
+shapiro.test(data2$price)
+
+
+
+#Linear relationship
+#scatter plot matrix
+plot(data2[-c(5,7:9)], col="blue")
+#correlation for multicollinearity
+cor(data2[-c(1,5,7:9)])
+
+```
+
+
+```{r }
+#the full model
+model<-lm(log10(price)~highwaympg+citympg+horsepower+fuelsystem
+          +enginesize+cylindernumber+drivewheel+fueltype, data=data2)
+summary(model)
+
+
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+
+```{r }
+#model 
+library(leaps)
+m1<-regsubsets(log10(price)~highwaympg+citympg+horsepower+fuelsystem
+               +enginesize+cylindernumber+drivewheel+fueltype, data=data2)
+models<-summary(m1)
+#see the number of recommended regression models
+which.max(models$adjr2)
+
+#best models based on adj r2, cp and bic
+data.frame(
+  Adj.R2 = which.max(models$adjr2),
+  CP = which.min(models$cp),
+  BIC = which.min(models$bic)
+)
+#get the corresponding adjusted r2, cp, and bic for the best model
+models$adjr2[8]
+models$bic[8]
+models$cp[8]
+```
+
+
+```{r }
+#now obtain the best predictors
+models$which[8,]
+#regression coefficients for the best model
+coef(m1, 8)
+```
+
+
